@@ -1,0 +1,33 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Herramientas de spycx/forms-kit.
+ *
+ *   vendor/bin/forms-kit publish [directorio]
+ *       Copia forms-kit.js al directorio público del sitio (por defecto, el actual).
+ *       vendor/ no se sirve públicamente, por eso el JS se copia. Conviene ponerlo en
+ *       "post-install-cmd" y "post-update-cmd" del composer.json del sitio.
+ */
+
+declare(strict_types=1);
+
+$command = $argv[1] ?? '';
+
+if ($command !== 'publish') {
+    fwrite(STDERR, "Uso: forms-kit publish [directorio]\n");
+    exit(1);
+}
+
+$source = dirname(__DIR__) . '/resources/js/forms-kit.js';
+$target = rtrim($argv[2] ?? getcwd(), '/') . '/forms-kit.js';
+
+if (!is_dir(dirname($target))) {
+    fwrite(STDERR, "forms-kit: no existe el directorio " . dirname($target) . "\n");
+    exit(1);
+}
+if (!copy($source, $target)) {
+    fwrite(STDERR, "forms-kit: no se pudo copiar a $target\n");
+    exit(1);
+}
+
+echo "forms-kit: publicado $target\n";
