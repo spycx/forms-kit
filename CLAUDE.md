@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PHP** (`src/`, namespace `Spycx\FormsKit\`) — `FormEndpoint` serves the anti-spam token and processes the POST: anti-spam → validation → per-IP limit → email via `symfony/mailer`. Responses are always JSON `{ok, message}`.
 - **JS** (`resources/js/forms-kit.js`) — the browser client. Sites don't load it from `vendor/` (their `.htaccess` blocks it). `bin/forms-kit publish` copies it into the site's web root, usually from the site's `post-install-cmd`/`post-update-cmd`.
 
-User-facing docs are in `README.md`. Documentation is in English. User-facing strings (`DEFAULT_MESSAGES`, the JS `DEFAULT_TEXTS`) and code comments are in Spanish. Identifiers are English.
+User-facing docs are in `README.md`. Everything is in English (docs, code comments, log/exception/CLI messages, identifiers) except user-facing strings (`DEFAULT_MESSAGES`, the JS `DEFAULT_TEXTS`), which default to Spanish.
 
 ## Commands
 
