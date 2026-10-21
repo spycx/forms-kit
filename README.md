@@ -9,15 +9,17 @@ necesitaban Laravel solo para el formulario.
 
 ## Instalación
 
-Mientras el paquete sea privado, se declara su repositorio en el `composer.json` del sitio:
+El código está en <https://github.com/spycx/forms-kit>. Aún no está en Packagist, así que se
+declara el repositorio en el `composer.json` del sitio. Usa `dev-main` hasta que haya tags;
+después, `^0.1`:
 
 ```json
 {
     "repositories": [
-        { "type": "vcs", "url": "git@github.com:spycx/forms-kit.git" }
+        { "type": "vcs", "url": "https://github.com/spycx/forms-kit" }
     ],
     "require": {
-        "spycx/forms-kit": "^0.1"
+        "spycx/forms-kit": "dev-main"
     },
     "scripts": {
         "post-install-cmd": ["forms-kit publish"],
@@ -26,14 +28,13 @@ Mientras el paquete sea privado, se declara su repositorio en el `composer.json`
 }
 ```
 
-Para desarrollar el paquete junto a un sitio, usa un repositorio `path` **sin symlink**,
+Para **desarrollar** el paquete probándolo en un sitio, agrega temporalmente, *antes* del
+repositorio `vcs`, uno `path` **sin symlink** (no lo subas al repo del sitio). Sin symlink
 porque `vendor/` se sube al servidor y un symlink no funcionaría allá:
 
 ```json
 { "type": "path", "url": "../forms-kit", "options": { "symlink": false } }
 ```
-
-con `"spycx/forms-kit": "dev-main"`.
 
 `forms-kit publish` copia `forms-kit.js` a la raíz del sitio. `vendor/` no debe servirse
 públicamente, por eso el JS se copia. La copia se sobrescribe en cada `install`/`update`:

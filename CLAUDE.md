@@ -80,4 +80,10 @@ Then exercise the form with `MAILER_DSN=null://null`. **Check the site's `.env` 
 
 ## Releasing
 
-Not yet on a Git host. Once pushed, tag versions (`v0.1.0`…) and switch consumers from the `path` repository to `{"type": "vcs", "url": "…"}` with `^0.x`.
+The package is public at <https://github.com/spycx/forms-kit> (remote `origin`, branch `main`). It isn't on Packagist, so consumers declare `{"type": "vcs", "url": "https://github.com/spycx/forms-kit"}`.
+- **Consumers:**
+  - `landingpage-skeleton` (and new sites) require `dev-main`;
+  - `mexcoffee` still uses a local `path` repository to `../forms-kit`.
+- **No tags yet.** To release, tag (`git tag v0.1.0 && git push origin v0.1.0`) and move consumers from `dev-main` to `^0.1`.
+- **Each site's `composer.lock` pins the commit**, so pushing to `main` doesn't change deployed sites until they run `composer update spycx/forms-kit`.
+- Pushing and tagging are public actions: do them only when the user asks.
