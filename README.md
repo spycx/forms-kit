@@ -1,17 +1,17 @@
 # spycx/forms-kit
 
-Formularios web para sitios PHP sin framework: anti-spam (honeypot + token firmado +
-límite por IP), validación y envío por correo con `symfony/mailer`, más un cliente JS
-con modales de SweetAlert2 opcionales.
+Web forms for framework-free PHP sites. It provides:
+- anti-spam: a honeypot, a signed token and a per-IP rate limit;
+- validation, and email delivery through `symfony/mailer`;
+- a JS client with optional SweetAlert2 modals.
 
-Pensado para landing pages estáticas (`index.html` + un `contact.php`) que antes
-necesitaban Laravel solo para el formulario.
+Built for static landing pages (`index.html` + one `contact.php`) that used to need Laravel just
+for the contact form. User-facing messages default to Spanish and can all be overridden.
 
-## Instalación
+## Installation
 
-El código está en <https://github.com/spycx/forms-kit>. Aún no está en Packagist, así que se
-declara el repositorio en el `composer.json` del sitio. Usa `dev-main` hasta que haya tags;
-después, `^0.1`:
+The code lives at <https://github.com/spycx/forms-kit>. It isn't on Packagist yet, so declare the
+repository in the site's `composer.json`. Use `dev-main` until there are tags, then `^0.1`:
 
 ```json
 {
@@ -28,19 +28,18 @@ después, `^0.1`:
 }
 ```
 
-Para **desarrollar** el paquete probándolo en un sitio, agrega temporalmente, *antes* del
-repositorio `vcs`, uno `path` **sin symlink** (no lo subas al repo del sitio). Sin symlink
-porque `vendor/` se sube al servidor y un symlink no funcionaría allá:
+To **develop** the package while testing it in a site, temporarily add a `path` repository
+**without symlink** *before* the `vcs` one, and don't commit it to the site's repo. It has to be
+without symlink because `vendor/` is uploaded to the server, where a symlink wouldn't resolve:
 
 ```json
 { "type": "path", "url": "../forms-kit", "options": { "symlink": false } }
 ```
 
-`forms-kit publish` copia `forms-kit.js` a la raíz del sitio. `vendor/` no debe servirse
-públicamente, por eso el JS se copia. La copia se sobrescribe en cada `install`/`update`:
-no la edites.
+`forms-kit publish` copies `forms-kit.js` to the site root. `vendor/` must not be publicly served,
+so the JS is copied out of it. The copy is overwritten on every `install`/`update`, so don't edit it.
 
-## Servidor: `contact.php`
+## Server: `contact.php`
 
 ```php
 <?php
@@ -62,87 +61,85 @@ FormEndpoint::fromEnv(__DIR__)
     ->handle();
 ```
 
-`fromEnv()` lee de `.env` (o del entorno):
+`fromEnv()` reads from `.env` (or the environment):
 
-| Variable | Uso |
+| Variable | Purpose |
 |---|---|
-| `MAILER_DSN` | Transporte de symfony/mailer (`smtp://usuario:clave@host:587`, `null://null` en desarrollo) |
-| `MAIL_TO` | Buzón que recibe los mensajes |
-| `MAIL_FROM` | Remitente; debe ser un dominio que el SMTP permita |
-| `FORM_SECRET` | Clave para firmar el token. Se genera con `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Si falta, se deriva de `MAILER_DSN`. |
+| `MAILER_DSN` | symfony/mailer transport (`smtp://user:pass@host:587`; `null://null` for development) |
+| `MAIL_TO` | Inbox that receives the messages |
+| `MAIL_FROM` | Sender; must be a domain the SMTP server allows |
+| `FORM_SECRET` | Key that signs the token. Generate one with `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. If missing, it's derived from `MAILER_DSN`. |
 
-### Qué hace con cada petición
+### What happens on each request
 
-1. `GET contact.php?token` → `{ok: true, token}` con `Cache-Control: no-store`.
-2. Cualquier otro método distinto de `POST` → 405.
-3. Sin `MAILER_DSN`/`MAIL_TO`/`MAIL_FROM` → 500 (y `error_log`).
-4. **Honeypot** (`website` lleno) o token con menos de 3 s → 200 con **éxito falso**: el bot
-   no se entera y no se envía nada.
-5. Token ausente, falsificado o con más de 24 h → 422 «El formulario caducó…».
-6. Validación de campos → 422 con el mensaje del campo.
-7. **Límite por IP:** más de 5 envíos válidos en una hora → 429. Solo cuentan los que pasaron
-   la validación.
-8. Envío. Si el transporte falla → 502 con mensaje genérico; el detalle va a `error_log`.
+1. `GET contact.php?token` → `{ok: true, token}` with `Cache-Control: no-store`.
+2. Any other method except `POST` → 405.
+3. Missing `MAILER_DSN`/`MAIL_TO`/`MAIL_FROM` → 500, plus an `error_log` entry.
+4. **Honeypot** filled (`website`), or a token younger than 3 s → 200 with a **fake success**. The bot isn't told and nothing is sent.
+5. Missing, forged or more than 24 h old token → 422 «El formulario caducó…».
+6. Field validation → 422 with the field's message.
+7. **Per-IP limit:** more than 5 valid submissions in an hour → 429. Only submissions that passed validation count.
+8. Send. If the transport fails → 502 with a generic message; the details go to `error_log`.
 
-Las respuestas son siempre JSON `{ok, message}`. Los errores de PHP nunca se muestran en pantalla.
+Responses are always JSON `{ok, message}`. PHP errors are never displayed.
 
-### Opciones
+### Options
 
-| Método | Por defecto |
+| Method | Default |
 |---|---|
 | `field(name, label, required, max, email, multiline, error)` | — |
-| `template(path)` | sin HTML (solo texto) |
-| `subject('… {campo} …')` | `Nuevo mensaje del formulario web` |
-| `intro(texto)` | primera línea del correo de texto |
-| `fromName(nombre)` | `Formulario web` |
-| `replyTo(campoCorreo, campoNombre)` | sin Reply-To |
-| `logo(path, cid)` | sin logo |
-| `date(zonaHoraria, formato)` | `America/Mexico_City`, `d/m/Y \a \l\a\s H:i` |
-| `messages([...])` | ver `FormEndpoint::DEFAULT_MESSAGES` |
+| `template(path)` | no HTML (text only) |
+| `subject('… {field} …')` | `Nuevo mensaje del formulario web` |
+| `intro(text)` | first line of the plain-text email |
+| `fromName(name)` | `Formulario web` |
+| `replyTo(emailField, nameField)` | no Reply-To |
+| `logo(path, cid)` | no logo |
+| `date(timezone, format)` | `America/Mexico_City`, `d/m/Y \a \l\a\s H:i` |
+| `messages([...])` | see `FormEndpoint::DEFAULT_MESSAGES` |
 | `guard(minSeconds, maxAge)` | 3 s, 24 h |
-| `rateLimit(max, window, dir)` | 5 por 3600 s, en `sys_get_temp_dir()/forms-kit-<hash del sitio>` |
+| `rateLimit(max, window, dir)` | 5 per 3600 s, in `sys_get_temp_dir()/forms-kit-<site hash>` |
 | `clientIp(fn(array $server): string)` | `REMOTE_ADDR` |
-| `mailer(MailerInterface)` | se crea desde `MAILER_DSN` |
+| `mailer(MailerInterface)` | built from `MAILER_DSN` |
 
-**Detrás de un proxy o CDN** (p. ej. Cloudflare) todos llegan con la IP del proxy. Usa
-`clientIp()` para leer la cabecera del proxy, validando que la petición viene de él.
+**Behind a proxy or CDN** (e.g. Cloudflare), every visitor arrives with the proxy's IP. Use
+`clientIp()` to read the proxy's header, after checking that the request really comes from the proxy.
 
-### Plantilla del correo
+### Email template
 
-Plantilla PHP normal. Todas las variables llegan **ya escapadas**, así que la plantilla no
-debe volver a escapar:
+A plain PHP template. All variables arrive **already escaped**, so the template must not escape
+them again:
 
-- una variable por campo (`$name`, `$email`…);
-- `$<campo>Html` con `<br>` para los campos `multiline` (p. ej. `$messageHtml`);
-- `$fields`: lista de `['name', 'label', 'value', 'html', 'multiline']`, para plantillas genéricas;
-- `$date` y `$logoCid` (úsalo como `src="cid:<?= $logoCid ?>"`).
+- one variable per field (`$name`, `$email`…);
+- `$<field>Html` with `<br>` line breaks for `multiline` fields (e.g. `$messageHtml`);
+- `$fields`: a list of `['name', 'label', 'value', 'html', 'multiline']`, for generic templates;
+- `$date` and `$logoCid` (use it as `src="cid:<?= $logoCid ?>"`).
 
-Usa estilos en línea: los clientes de correo ignoran `<style>`. Conviene que empiece con
-`if (!isset($logoCid)) { http_response_code(404); exit; }` por si alguien la pide directo
-por URL.
+Use inline styles: email clients ignore `<style>`. Start the template with
+`if (!isset($logoCid)) { http_response_code(404); exit; }`, so it shows nothing if someone requests
+it directly by URL.
 
-## Navegador: `forms-kit.js`
+## Browser: `forms-kit.js`
 
 ```html
-<form class="contacto-form" action="contact.php" method="POST" novalidate>
+<form class="contact-form" action="contact.php" method="POST" novalidate>
   <div class="form-hp" aria-hidden="true">
     <label for="website">Sitio web</label>
     <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
   </div>
   <input type="hidden" name="form_token" value="">
-  <!-- campos… -->
+  <!-- fields… -->
   <button type="submit" class="btn-submit">Enviar</button>
   <p class="form-status" role="status" aria-live="polite"></p>
 </form>
 
-<!-- Opcional: SweetAlert2 (con integrity) -->
+<!-- Optional: SweetAlert2 (with integrity) -->
 <script src="forms-kit.js"></script>
 <script src="index.js"></script>
 ```
 
 ```js
-FormsKit.attach(document.querySelector('.contacto-form'), {
-  swal: { background: '#131512', color: '#F4F1EA', confirmButtonColor: '#2E5A44', customClass: { popup: 'swal-misitio' } },
+FormsKit.attach(document.querySelector('.contact-form'), {
+  swal: { background: '#131512', color: '#F4F1EA', confirmButtonColor: '#2E5A44', customClass: { popup: 'swal-mysite' } },
   iconColors: { question: '#D2AE6D', success: '#4A8F6A', error: '#E06C6C' },
   texts: {
     confirmHtml: (safeName) => `Hola <strong>${safeName}</strong>, te responderemos pronto.`
@@ -150,16 +147,15 @@ FormsKit.attach(document.querySelector('.contacto-form'), {
 });
 ```
 
-Opciones: `swal`, `iconColors`, `texts` (ver `DEFAULT_TEXTS` en el archivo), `confirm`,
-`nameField`, `tokenField`, `statusSelector`, `submitSelector`, `sendingClass`, `minWaitMs`,
-`maxTokenAgeMs`.
+Options: `swal`, `iconColors`, `texts` (see `DEFAULT_TEXTS` in the file), `confirm`, `nameField`,
+`tokenField`, `statusSelector`, `submitSelector`, `sendingClass`, `minWaitMs`, `maxTokenAgeMs`.
 
-El cliente pide el token al cargar, espera lo necesario para no enviar antes de los 3 s y
-renueva el token si es viejo. Si SweetAlert2 no cargó, usa `window.confirm` y escribe el
-resultado en `.form-status` (con `is-success` / `is-error`).
+The client fetches the token on page load and waits so it never submits before the 3 s minimum.
+It also renews the token when it gets old. If SweetAlert2 didn't load, it falls back to
+`window.confirm` and writes the result into `.form-status` (with `is-success` / `is-error`).
 
-**CSS que debe poner el sitio:** ocultar el honeypot **sin** `display: none`, porque algunos
-bots lo detectan:
+**CSS the site must provide:** hide the honeypot **without** `display: none`, since some bots
+detect that:
 
 ```css
 .form-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
@@ -167,12 +163,13 @@ bots lo detectan:
 
 ## CSRF
 
-El endpoint no usa sesiones ni cookies, así que no hay CSRF clásico. Un formulario de otro
-sitio no tiene token válido (422), y su JS no puede leer `?token` porque no se envían
-cabeceras CORS. Si un sitio agrega sesiones o login, esos formularios sí necesitan su propio
-token CSRF.
+The endpoint uses no sessions or cookies, so classic CSRF doesn't apply:
+- a form on another site has no valid token, so it gets a 422;
+- the other site's JS can't read `?token`, because no CORS headers are sent.
 
-## Desarrollo
+If a site adds sessions or logins, those forms do need their own CSRF token.
+
+## Development
 
 ```bash
 composer install
