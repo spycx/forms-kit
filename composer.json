@@ -1,6 +1,6 @@
 {
     "name": "spycx/forms-kit",
-    "description": "Formularios web sin framework: honeypot, token firmado, límite por IP y envío por correo con symfony/mailer.",
+    "description": "Framework-free web forms: honeypot, signed token, per-IP rate limit and email delivery via symfony/mailer.",
     "type": "library",
     "license": "proprietary",
     "keywords": ["form", "contact", "honeypot", "spam", "mailer"],

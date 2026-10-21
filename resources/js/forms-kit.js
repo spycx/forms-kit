@@ -1,19 +1,19 @@
 /*!
- * forms-kit — cliente del formulario (spycx/forms-kit).
- * Copiado al sitio con `vendor/bin/forms-kit publish`: no editar la copia, se sobrescribe.
+ * forms-kit — form client (spycx/forms-kit).
+ * Copied into the site by `vendor/bin/forms-kit publish`: don't edit the copy, it gets overwritten.
  *
- * FormsKit.attach(form, opciones) conecta un <form action="contact.php"> con el endpoint:
- *   - pide el token anti-spam (GET action?token) al cargar y lo pone en el campo oculto;
- *   - al enviar: confirmar → "Enviando…" → éxito / error, con SweetAlert2 si está cargado
- *     y, si no, window.confirm + texto en el elemento de estado;
- *   - espera lo necesario para no enviar antes del mínimo que exige el servidor.
+ * FormsKit.attach(form, options) connects a <form action="contact.php"> to the endpoint:
+ *   - requests the anti-spam token (GET action?token) on load and puts it in the hidden field;
+ *   - on submit: confirm → "Enviando…" → success / error, using SweetAlert2 when loaded
+ *     and otherwise window.confirm + text in the status element;
+ *   - waits as needed so it never submits before the server's minimum.
  */
 (function (window) {
   'use strict';
 
   const DEFAULT_TEXTS = {
     confirmTitle: '¿Enviar mensaje?',
-    // Recibe el nombre ya escapado; devuelve HTML
+    // Receives the already-escaped name; returns HTML
     confirmHtml: (safeName) => safeName
       ? `Hola <strong>${safeName}</strong>, te responderemos a la brevedad.`
       : 'Te responderemos a la brevedad.',
@@ -37,17 +37,17 @@
   /**
    * @param {HTMLFormElement} form
    * @param {object} [options]
-   * @param {object} [options.swal]        Opciones base de SweetAlert2 (tema): background, color, customClass…
+   * @param {object} [options.swal]        Base SweetAlert2 options (theme): background, color, customClass…
    * @param {object} [options.iconColors]  { question, success, error }
-   * @param {object} [options.texts]       Reemplaza textos de DEFAULT_TEXTS.
-   * @param {boolean} [options.confirm=true] Pedir confirmación antes de enviar.
-   * @param {string} [options.nameField='name']  Campo cuyo valor se muestra en la confirmación.
+   * @param {object} [options.texts]       Overrides entries of DEFAULT_TEXTS.
+   * @param {boolean} [options.confirm=true] Ask for confirmation before sending.
+   * @param {string} [options.nameField='name']  Field whose value is shown in the confirmation.
    * @param {string} [options.tokenField='form_token']
    * @param {string} [options.statusSelector='.form-status']
    * @param {string} [options.submitSelector='[type="submit"]']
    * @param {string} [options.sendingClass='is-sending']
-   * @param {number} [options.minWaitMs=3500]  Debe ser mayor que el mínimo del servidor (3 s).
-   * @param {number} [options.maxTokenAgeMs]   Renovar el token pasado este tiempo (12 h; el servidor acepta 24 h).
+   * @param {number} [options.minWaitMs=3500]  Must be greater than the server's minimum (3 s).
+   * @param {number} [options.maxTokenAgeMs]   Renew the token after this long (12 h; the server accepts 24 h).
    */
   function attach(form, options = {}) {
     if (!form) return;
@@ -74,14 +74,14 @@
     const hasSwal = () => typeof window.Swal !== 'undefined';
     let tokenAt = 0;
 
-    // --- Token anti-spam ---
+    // --- Anti-spam token ---
     const fetchToken = async () => {
       const res = await fetch(form.action + '?token', {
         headers: { 'Accept': 'application/json' },
         cache: 'no-store'
       });
       const data = await res.json();
-      if (!data.token) throw new Error('Sin token');
+      if (!data.token) throw new Error('No token');
       tokenInput.value = data.token;
       tokenAt = Date.now();
     };
@@ -95,7 +95,7 @@
 
     if (tokenInput) fetchToken().catch(() => {});
 
-    // --- Interfaz ---
+    // --- UI ---
     const setStatus = (type, text) => {
       if (!statusEl) return;
       statusEl.textContent = text;
@@ -183,7 +183,7 @@
         if (res.ok && data.ok) {
           showResult(true, data.message);
           form.reset();
-          // Token nuevo para un siguiente envío (vuelve a contar el tiempo mínimo)
+          // Fresh token for a next submission (restarts the minimum-time count)
           tokenAt = 0;
           if (tokenInput) fetchToken().catch(() => {});
         } else {

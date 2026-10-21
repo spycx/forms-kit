@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Spycx\FormsKit;
 
-/** Respuesta JSON de FormEndpoint, separada de su envío para poder probarla. */
+/** FormEndpoint's JSON response, kept separate from sending it so it can be tested. */
 final class Response
 {
     /**

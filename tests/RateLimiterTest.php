@@ -57,7 +57,7 @@ final class RateLimiterTest extends TestCase
         $limiter->attempt('ip');
         $this->assertFalse($limiter->attempt('ip'));
 
-        $this->now += 31; // el primero ya salió de la ventana
+        $this->now += 31; // the first one has left the window
         $this->assertTrue($limiter->attempt('ip'));
         $this->assertFalse($limiter->attempt('ip'));
     }

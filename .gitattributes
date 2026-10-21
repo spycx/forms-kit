@@ -1,4 +1,4 @@
-# Fuera de los paquetes instalados (zip de GitHub y copias de repositorios path)
+# Kept out of installed packages (GitHub zips and path-repository copies)
 /.gitattributes   export-ignore
 /.gitignore       export-ignore
 /.phpunit.cache   export-ignore

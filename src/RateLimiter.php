@@ -7,17 +7,17 @@ namespace Spycx\FormsKit;
 use Closure;
 
 /**
- * Límite de intentos por clave (normalmente la IP) en una ventana de tiempo.
+ * Limits attempts per key (usually the IP) within a time window.
  *
- * Guarda las marcas de tiempo en un archivo JSON por clave (nombre = hash de la clave)
- * con bloqueo exclusivo. Si no puede escribir en el directorio, no bloquea a nadie.
+ * Stores timestamps in one JSON file per key (file name = hash of the key) under an
+ * exclusive lock. If the directory isn't writable, nobody is blocked (fails open).
  */
 final class RateLimiter
 {
     private readonly Closure $clock;
 
     /**
-     * @param Closure(): int|null $clock Fuente del tiempo actual (para pruebas).
+     * @param Closure(): int|null $clock Source of the current time (for tests).
      */
     public function __construct(
         private readonly string $dir,
@@ -28,7 +28,7 @@ final class RateLimiter
         $this->clock = $clock ?? time(...);
     }
 
-    /** Registra un intento para la clave y dice si sigue dentro del límite. */
+    /** Records an attempt for the key and tells whether it is still within the limit. */
     public function attempt(string $key): bool
     {
         if (!is_dir($this->dir) && !@mkdir($this->dir, 0700, true) && !is_dir($this->dir)) {

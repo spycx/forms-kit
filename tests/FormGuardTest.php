@@ -37,9 +37,9 @@ final class FormGuardTest extends TestCase
 
         $this->assertNull($this->guard()->tokenAge(''));
         $this->assertNull($this->guard()->tokenAge('basura'));
-        $this->assertNull($this->guard()->tokenAge(($ts - 100) . '.' . $sig), 'timestamp cambiado');
-        $this->assertNull($this->guard()->tokenAge($ts . '.' . str_repeat('0', 64)), 'firma falsa');
-        $this->assertNull($this->guard('otra-clave')->tokenAge($token), 'otra clave');
+        $this->assertNull($this->guard()->tokenAge(($ts - 100) . '.' . $sig), 'timestamp changed');
+        $this->assertNull($this->guard()->tokenAge($ts . '.' . str_repeat('0', 64)), 'fake signature');
+        $this->assertNull($this->guard('otra-clave')->tokenAge($token), 'different key');
     }
 
     public function testValidTokenAfterMinimumPasses(): void

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Spycx\FormsKit;
 
-/** Resultado de FormGuard::check(). */
+/** Result of FormGuard::check(). */
 enum Verdict
 {
-    /** Pasa los filtros anti-spam. */
+    /** Passes the anti-spam filters. */
     case Ok;
 
-    /** Bot (honeypot lleno o envío demasiado rápido): responder con un éxito falso. */
+    /** Bot (honeypot filled or submitted too fast): answer with a fake success. */
     case Spam;
 
-    /** Token ausente, falsificado o caducado: pedir que recargue la página. */
+    /** Missing, forged or expired token: ask the user to reload the page. */
     case Expired;
 }

@@ -7,7 +7,7 @@
          failOnWarning="true"
          failOnRisky="true">
     <php>
-        <!-- Los errores registrados a propósito por las pruebas no ensucian la salida -->
+        <!-- Errors the tests log on purpose don't clutter the output -->
         <ini name="error_log" value="/dev/null"/>
     </php>
     <testsuites>

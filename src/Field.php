@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Spycx\FormsKit;
 
-/** Un campo del formulario y sus reglas de validación. */
+/** A form field and its validation rules. */
 final class Field
 {
     public function __construct(
@@ -13,9 +13,9 @@ final class Field
         public readonly bool $required = false,
         public readonly ?int $max = null,
         public readonly bool $email = false,
-        /** Texto largo: va al final del correo de texto y recibe la variable "{name}Html" con <br>. */
+        /** Long text: goes last in the plain-text email and gets a "{name}Html" template variable with <br>. */
         public readonly bool $multiline = false,
-        /** Mensaje de error si no valida; null usa el mensaje "invalid_field" del endpoint. */
+        /** Error message when invalid; null uses the endpoint's "invalid_field" message. */
         public readonly ?string $error = null,
     ) {
     }

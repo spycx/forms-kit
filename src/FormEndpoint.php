@@ -18,10 +18,10 @@ use Symfony\Component\Mime\Part\DataPart;
 use Symfony\Component\Mime\Part\File;
 
 /**
- * Endpoint de formulario: entrega el token anti-spam (GET ?token) y procesa el POST
- * (anti-spam → validación → límite por IP → correo). Responde siempre JSON {ok, message}.
+ * Form endpoint: serves the anti-spam token (GET ?token) and processes the POST
+ * (anti-spam → validation → per-IP limit → email). Always responds with JSON {ok, message}.
  *
- * Uso típico en contact.php:
+ * Typical use in contact.php:
  *
  *     FormEndpoint::fromEnv(__DIR__)
  *         ->field('name', 'Nombre', required: true, max: 120)
@@ -77,15 +77,15 @@ final class FormEndpoint
         private readonly string $secret,
         string $baseDir,
     ) {
-        // Un directorio por sitio para que dos sitios en el mismo servidor no compartan contadores
+        // One directory per site, so two sites on the same server don't share counters
         $this->rateDir  = sys_get_temp_dir() . '/forms-kit-' . substr(hash('sha256', $baseDir), 0, 12);
         $this->clientIp = static fn(array $server): string => (string) ($server['REMOTE_ADDR'] ?? '');
         $this->clock    = time(...);
     }
 
     /**
-     * Lee MAILER_DSN, MAIL_TO, MAIL_FROM y FORM_SECRET de $baseDir/.env (si existe) o del entorno.
-     * Sin FORM_SECRET la clave se deriva de MAILER_DSN, que ya es secreto.
+     * Reads MAILER_DSN, MAIL_TO, MAIL_FROM and FORM_SECRET from $baseDir/.env (if present) or the environment.
+     * Without FORM_SECRET the key is derived from MAILER_DSN, which is already secret.
      */
     public static function fromEnv(string $baseDir): self
     {
@@ -100,7 +100,7 @@ final class FormEndpoint
         return new self($dsn, $env('MAIL_TO'), $env('MAIL_FROM'), $secret, $baseDir);
     }
 
-    // --- Configuración ---------------------------------------------------
+    // --- Configuration ---------------------------------------------------
 
     public function field(
         string $name,
@@ -115,21 +115,21 @@ final class FormEndpoint
         return $this;
     }
 
-    /** Plantilla PHP del correo HTML. Recibe las variables ya escapadas (ver templateVars()). */
+    /** PHP template for the HTML email. It receives already-escaped variables (see templateVars()). */
     public function template(string $path): self
     {
         $this->template = $path;
         return $this;
     }
 
-    /** Asunto; acepta {campo}, p. ej. "Contacto web: {name}". */
+    /** Subject; accepts {field} placeholders, e.g. "Contacto web: {name}". */
     public function subject(string $subject): self
     {
         $this->subject = $subject;
         return $this;
     }
 
-    /** Primera línea del correo de texto plano. */
+    /** First line of the plain-text email. */
     public function intro(string $intro): self
     {
         $this->intro = $intro;
@@ -142,7 +142,7 @@ final class FormEndpoint
         return $this;
     }
 
-    /** Campo con el correo del visitante (y opcionalmente su nombre) para el Reply-To. */
+    /** Field holding the visitor's email (and optionally their name) for Reply-To. */
     public function replyTo(string $emailField, ?string $nameField = null): self
     {
         $this->replyToField = $emailField;
@@ -150,7 +150,7 @@ final class FormEndpoint
         return $this;
     }
 
-    /** Imagen embebida en el correo; en la plantilla se usa como src="cid:<?= $logoCid ?>". */
+    /** Image embedded in the email; use it in the template as src="cid:<?= $logoCid ?>". */
     public function logo(string $path, string $cid = 'logo'): self
     {
         $this->logoPath = $path;
@@ -158,7 +158,7 @@ final class FormEndpoint
         return $this;
     }
 
-    /** Zona horaria y formato de la variable $date de la plantilla. */
+    /** Timezone and format of the template's $date variable. */
     public function date(string $timezone, string $format = 'd/m/Y \a \l\a\s H:i'): self
     {
         $this->timezone = $timezone;
@@ -166,14 +166,14 @@ final class FormEndpoint
         return $this;
     }
 
-    /** @param array<string, string> $messages Reemplaza mensajes de DEFAULT_MESSAGES. */
+    /** @param array<string, string> $messages Overrides entries of DEFAULT_MESSAGES. */
     public function messages(array $messages): self
     {
         $this->messages = [...$this->messages, ...$messages];
         return $this;
     }
 
-    /** Segundos mínimos y máximos entre que se pide el token y se envía el formulario. */
+    /** Minimum and maximum seconds between requesting the token and submitting the form. */
     public function guard(int $minSeconds = 3, int $maxAge = 86400): self
     {
         $this->minSeconds = $minSeconds;
@@ -181,7 +181,7 @@ final class FormEndpoint
         return $this;
     }
 
-    /** Envíos válidos permitidos por IP en la ventana (segundos). */
+    /** Valid submissions allowed per IP within the window (seconds). */
     public function rateLimit(int $max = 5, int $window = 3600, ?string $dir = null): self
     {
         $this->rateMax = $max;
@@ -191,10 +191,10 @@ final class FormEndpoint
     }
 
     /**
-     * Cómo obtener la IP del visitante (por defecto REMOTE_ADDR). Detrás de un proxy o CDN,
-     * leer la cabecera del proxy aquí, validando que la petición viene de él.
+     * How to get the visitor's IP (REMOTE_ADDR by default). Behind a proxy or CDN, read the
+     * proxy's header here, after checking that the request really comes from the proxy.
      *
-     * @param Closure(array<string, mixed>): string $resolver Recibe $_SERVER.
+     * @param Closure(array<string, mixed>): string $resolver Receives $_SERVER.
      */
     public function clientIp(Closure $resolver): self
     {
@@ -215,12 +215,12 @@ final class FormEndpoint
         return $this;
     }
 
-    // --- Ejecución -------------------------------------------------------
+    // --- Execution -------------------------------------------------------
 
-    /** Procesa la petición actual, envía la respuesta y termina. */
+    /** Processes the current request, sends the response and exits. */
     public function handle(): never
     {
-        // Los errores van solo al log: en pantalla romperían el JSON y revelarían rutas
+        // Errors go only to the log: on screen they'd break the JSON and reveal server paths
         ini_set('display_errors', '0');
 
         $this->process((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'), $_GET, $_POST, $_SERVER)->send();
@@ -243,11 +243,11 @@ final class FormEndpoint
             return $this->fail(405, 'method');
         }
         if ($this->dsn === '' || $this->to === '' || $this->from === '') {
-            error_log('forms-kit: faltan MAILER_DSN, MAIL_TO o MAIL_FROM');
+            error_log('forms-kit: MAILER_DSN, MAIL_TO or MAIL_FROM is missing');
             return $this->fail(500, 'not_configured');
         }
 
-        // Spam: éxito falso para que el bot no sepa que fue detectado
+        // Spam: fake success so the bot doesn't learn it was caught
         switch ($guard->check($post)) {
             case Verdict::Spam:
                 return $this->ok();
@@ -267,7 +267,7 @@ final class FormEndpoint
             }
         }
 
-        // Se cuenta solo lo que pasó la validación, así un error de captura no gasta intentos
+        // Only count what passed validation, so a typo doesn't use up attempts
         $limiter = new RateLimiter($this->rateDir, $this->rateMax, $this->rateWindow, $this->clock);
         if (!$limiter->attempt(($this->clientIp)($server))) {
             return $this->fail(429, 'rate_limited');
@@ -276,14 +276,14 @@ final class FormEndpoint
         try {
             ($this->mailer ?? new Mailer(Transport::fromDsn($this->dsn)))->send($this->buildEmail($values));
         } catch (TransportExceptionInterface $e) {
-            error_log('forms-kit: error al enviar correo: ' . $e->getMessage());
+            error_log('forms-kit: failed to send email: ' . $e->getMessage());
             return $this->fail(502, 'send_failed');
         }
 
         return $this->ok();
     }
 
-    // --- Correo ----------------------------------------------------------
+    // --- Email -----------------------------------------------------------
 
     /** @param array<string, string> $values */
     public function buildEmail(array $values): Email
@@ -308,7 +308,7 @@ final class FormEndpoint
             $email->html(self::render($this->template, $this->templateVars($values)));
         }
         if ($this->logoPath !== null && is_file($this->logoPath)) {
-            // Tipo por extensión: adivinarlo del contenido requiere ext-fileinfo
+            // Type from the extension: guessing it from the content requires ext-fileinfo
             $type = match (strtolower(pathinfo($this->logoPath, PATHINFO_EXTENSION))) {
                 'png'         => 'image/png',
                 'jpg', 'jpeg' => 'image/jpeg',
@@ -323,7 +323,7 @@ final class FormEndpoint
     }
 
     /**
-     * Texto plano: campos cortos alineados y después los de texto largo.
+     * Plain text: short fields aligned, then the long-text fields.
      *
      * @param array<string, string> $values
      */
@@ -346,10 +346,10 @@ final class FormEndpoint
     }
 
     /**
-     * Variables de la plantilla, ya escapadas (la plantilla no debe escapar de nuevo):
-     * - una por campo ($name, $email…), y "{campo}Html" con <br> para los de texto largo;
-     * - $fields: lista de ['name', 'label', 'value', 'html', 'multiline'] para plantillas genéricas;
-     * - $date y $logoCid.
+     * Template variables, already escaped (the template must not escape them again):
+     * - one per field ($name, $email…), plus "{field}Html" with <br> for long-text fields;
+     * - $fields: a list of ['name', 'label', 'value', 'html', 'multiline'] for generic templates;
+     * - $date and $logoCid.
      *
      * @param array<string, string> $values
      * @return array<string, mixed>

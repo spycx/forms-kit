@@ -31,7 +31,7 @@ final class FormEndpointTest extends TestCase
             public function send(RawMessage $message, ?Envelope $envelope = null): void
             {
                 if ($this->fail) {
-                    throw new TransportException('SMTP caído: usuario:clave@smtp');
+                    throw new TransportException('SMTP down: user:pass@smtp');
                 }
                 $this->sent[] = $message;
             }
@@ -66,7 +66,7 @@ final class FormEndpointTest extends TestCase
             ->clock(fn(): int => $this->now);
     }
 
-    /** Token pedido hace $age segundos. */
+    /** Token requested $age seconds ago. */
     private function token(int $age = 5): string
     {
         $issuedAt = $this->now;
@@ -91,7 +91,7 @@ final class FormEndpointTest extends TestCase
         return ($endpoint ?? $this->endpoint())->process('POST', [], $data, ['REMOTE_ADDR' => $ip]);
     }
 
-    // --- Token y método ---
+    // --- Token and method ---
 
     public function testGetTokenIsNotCached(): void
     {
@@ -142,7 +142,7 @@ final class FormEndpointTest extends TestCase
         $this->assertCount(0, $this->mailer->sent);
     }
 
-    // --- Validación ---
+    // --- Validation ---
 
     public function testFieldErrorsUseTheirMessage(): void
     {
@@ -162,7 +162,7 @@ final class FormEndpointTest extends TestCase
         $this->assertSame('Revisa el campo «Empresa».', $res->body['message']);
     }
 
-    // --- Envío ---
+    // --- Sending ---
 
     public function testValidSubmissionSendsTheEmail(): void
     {
@@ -245,25 +245,25 @@ final class FormEndpointTest extends TestCase
         $this->assertSame('Escríbenos por WhatsApp.', @$this->post(endpoint: $endpoint)->body['message']);
     }
 
-    // --- Límite por IP ---
+    // --- Per-IP limit ---
 
     public function testRateLimitPerIpAfterValidation(): void
     {
         for ($i = 0; $i < 5; $i++) {
             $this->assertSame(200, $this->post()->status);
         }
-        // Un error de validación no gasta intentos ni cambia la respuesta
+        // A validation error doesn't use up attempts or change the response
         $this->assertSame(422, $this->post(['email' => 'mal'])->status);
 
         $res = $this->post();
         $this->assertSame(429, $res->status);
         $this->assertSame('Recibimos varios mensajes seguidos desde tu conexión. Intenta más tarde.', $res->body['message']);
 
-        $this->assertSame(200, $this->post(ip: '198.51.100.7')->status, 'otra IP no está limitada');
+        $this->assertSame(200, $this->post(ip: '198.51.100.7')->status, 'another IP is not limited');
         $this->assertCount(6, $this->mailer->sent);
 
         $this->now += 3601;
-        $this->assertSame(200, $this->post()->status, 'la ventana se libera');
+        $this->assertSame(200, $this->post()->status, 'the window frees up');
     }
 
     public function testCustomClientIpResolver(): void
@@ -296,7 +296,7 @@ final class FormEndpointTest extends TestCase
             $endpoint = FormEndpoint::fromEnv($site)->field('message', 'Mensaje', required: true)->rateLimit(dir: $this->dir)->mailer($this->mailer);
             $token = $endpoint->process('GET', ['token' => ''], [], [])->body['token'];
 
-            // La misma clave derivada verifica el token después de 3 s
+            // The same derived key verifies the token after 3 s
             $ts = (int) explode('.', $token)[0] - 5;
             $old = $ts . '.' . hash_hmac('sha256', (string) $ts, hash('sha256', 'forms-kit|null://null'));
             $res = $endpoint->process('POST', [], ['message' => 'hola', 'form_token' => $old], ['REMOTE_ADDR' => '1.1.1.1']);
